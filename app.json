@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "OBD2 Diagnostics",
+    "slug": "obd2-diagnostics",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#0B0F14"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.twellerstudios.obd2diagnostics",
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "This app connects to your OBD2 Bluetooth adapter to read live vehicle data.",
+        "NSBluetoothPeripheralUsageDescription": "This app connects to your OBD2 Bluetooth adapter to read live vehicle data."
+      }
+    },
+    "android": {
+      "package": "com.twellerstudios.obd2diagnostics",
+      "permissions": [
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_SCAN",
+        "ACCESS_FINE_LOCATION"
+      ]
+    },
+    "plugins": [
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": false,
+          "modes": ["peripheral", "central"],
+          "bluetoothAlwaysPermission": "Allow OBD2 Diagnostics to connect to your Bluetooth adapter."
+        }
+      ]
+    ]
+  }
+}
