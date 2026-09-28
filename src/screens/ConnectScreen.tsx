@@ -6,8 +6,10 @@ import { colors } from '../theme/colors';
 import { useObdStore } from '../lib/obdStore';
 import { ClassicObdTransport } from '../lib/transports/classicTransport';
 import { BleObdTransport } from '../lib/transports/bleTransport';
+import { ensureBluetoothPermissions } from '../lib/permissions';
 
-const bleManager = new BleManager();
+let bleManagerInstance: BleManager | null = null;
+const getBleManager = () => (bleManagerInstance ??= new BleManager());
 
 export function ConnectScreen() {
   const { connectionState, connectionError, connectClassic, connectBle } = useObdStore();
@@ -15,20 +17,40 @@ export function ConnectScreen() {
   const [bleDevices, setBleDevices] = useState<Device[]>([]);
   const [scanning, setScanning] = useState(false);
   const [mode, setMode] = useState<'classic' | 'ble'>('classic');
+  const [permissionGranted, setPermissionGranted] = useState(false);
+  const [permissionAsked, setPermissionAsked] = useState(false);
+  const [listError, setListError] = useState<string | null>(null);
+
+  const requestPermissions = async () => {
+    const ok = await ensureBluetoothPermissions().catch(() => false);
+    setPermissionGranted(ok);
+    setPermissionAsked(true);
+  };
 
   useEffect(() => {
-    if (mode === 'classic') {
-      ClassicObdTransport.listPaired()
-        .then(setPairedDevices)
-        .catch(() => setPairedDevices([]));
-    }
-  }, [mode]);
+    requestPermissions();
+  }, []);
+
+  useEffect(() => {
+    if (mode !== 'classic' || !permissionGranted) return;
+    setListError(null);
+    ClassicObdTransport.listPaired()
+      .then(setPairedDevices)
+      .catch((e) => {
+        setPairedDevices([]);
+        setListError(e?.message ?? 'Could not list paired Bluetooth devices.');
+      });
+  }, [mode, permissionGranted]);
 
   const startBleScan = async () => {
+    if (!permissionGranted) {
+      await requestPermissions();
+      return;
+    }
     setScanning(true);
     setBleDevices([]);
     const stop = await BleObdTransport.scan(
-      bleManager,
+      getBleManager(),
       (d) => setBleDevices((prev) => (prev.find((p) => p.id === d.id) ? prev : [...prev, d])),
       8000
     );
@@ -78,7 +100,7 @@ export function ConnectScreen() {
             keyExtractor={(d) => d.id}
             ListEmptyComponent={<Text style={styles.empty}>No BLE adapters found yet.</Text>}
             renderItem={({ item }) => (
-              <TouchableOpacity style={styles.deviceRow} disabled={connecting} onPress={() => connectBle(bleManager, item.id)}>
+              <TouchableOpacity style={styles.deviceRow} disabled={connecting} onPress={() => connectBle(getBleManager(), item.id)}>
                 <Text style={styles.deviceName}>{item.name || 'Unknown device'}</Text>
                 <Text style={styles.deviceAddr}>{item.id}</Text>
               </TouchableOpacity>
@@ -93,6 +115,12 @@ export function ConnectScreen() {
           <Text style={styles.statusText}>Connecting…</Text>
         </View>
       )}
+      {permissionAsked && !permissionGranted && (
+        <TouchableOpacity style={styles.scanButton} onPress={requestPermissions}>
+          <Text style={styles.scanButtonText}>Bluetooth permission needed — tap to grant</Text>
+        </TouchableOpacity>
+      )}
+      {listError && <Text style={styles.errorText}>{listError}</Text>}
       {connectionState === 'error' && connectionError && <Text style={styles.errorText}>{connectionError}</Text>}
     </View>
   );
