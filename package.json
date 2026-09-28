@@ -14,7 +14,7 @@
     "expo": "~51.0.0",
     "react": "18.2.0",
     "react-native": "0.74.5",
-    "react-native-bluetooth-classic": "^1.70.0",
+    "react-native-bluetooth-classic": "1.73.0-rc.17",
     "react-native-ble-plx": "^3.2.1",
     "react-native-base64": "^0.2.1",
     "@react-navigation/native": "^6.1.18",
